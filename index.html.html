@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FinancePro | Custom Edition</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#4f46e5">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            touch-action: manipulation; /* Melhora o toque no celular */
+            -webkit-tap-highlight-color: transparent;
+        }
+        .expense-enter { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+        
+        /* Ajuste fino para scroll no mobile */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 min-h-screen pb-20">
+
+    <header class="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tight italic">FINANCE<span class="text-indigo-600">PRO</span></h1>
+            <p class="text-slate-500 font-medium mt-1">Sua conta, suas cores, seu controle.</p>
+        </div>
+        <div class="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+            <button onclick="toggleDarkMode()" class="p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-xl" title="Trocar Tema">🌓</button>
+            <div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
+            <button onclick="clearAll()" class="px-4 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all uppercase">Resetar Dados</button>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <aside class="lg:col-span-4 space-y-6">
+            <div class="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-700">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Minha Renda</label>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-light text-slate-400 font-sans">R$</span>
+                    <input type="number" id="incomeInput" class="text-4xl font-bold bg-transparent outline-none w-full border-b-2 border-transparent focus:border-indigo-500 transition-all" value="5000">
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 p-8 rounded-[3rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xl font-bold mb-6">Novo Registro</h3>
+                <div class="space-y-5">
+                    <input type="text" id="desc" placeholder="Nome do gasto" class="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 border-none transition-all">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="number" id="amount" placeholder="Valor" class="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 border-none font-bold">
+                        <input type="date" id="date" class="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 border-none text-xs">
+                    </div>
+
+                    <div class="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Cor do Gasto:</label>
+                        <input type="color" id="expenseColor" value="#6366f1" class="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-none">
+                    </div>
+
+                    <select id="category" class="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 border-none font-medium">
+                        <option value="Essencial">🏠 Essencial</option>
+                        <option value="Lazer">🎡 Lazer</option>
+                        <option value="Saúde">💊 Saúde</option>
+                        <option value="Outros">✨ Outros</option>
+                    </select>
+
+                    <button onclick="addExpense()" class="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all hover:scale-[1.02] active:scale-95">
+                        Confirmar Transação
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <section class="lg:col-span-8 space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-indigo-600 p-8 rounded-[2.5rem] text-white">
+                    <p class="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-1">Saldo Atual</p>
+                    <h2 class="text-3xl font-bold">R$ <span id="balance">0,00</span></h2>
+                    <div class="mt-4 flex items-center gap-2">
+                        <div class="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
+                            <div id="pBar" class="h-full bg-white transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                        <span id="pText" class="text-[10px] font-bold">0%</span>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm">
+                    <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Economia Prevista</p>
+                    <h2 class="text-3xl font-bold text-emerald-500">R$ <span id="savings">0,00</span></h2>
+                    <p class="text-[10px] text-slate-400 mt-2">Baseado na renda mensal inserida.</p>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-700 flex flex-col items-center">
+                <h3 class="text-lg font-bold mb-8 self-start flex items-center gap-2">
+                    <span class="w-2 h-6 bg-indigo-600 rounded-full"></span>
+                    Análise Cromática de Gastos
+                </h3>
+                <div class="w-full max-w-md h-64">
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-700">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                    <h3 class="text-lg font-bold">Histórico de Fluxo</h3>
+                    <div class="flex gap-2" id="filters"></div>
+                </div>
+                <div id="list" class="space-y-3"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let expenses = JSON.parse(localStorage.getItem('finpro_expenses')) || [];
+        let income = localStorage.getItem('finpro_income') || 5000;
+        let chart;
+
+        document.getElementById('incomeInput').value = income;
+        document.getElementById('date').valueAsDate = new Date();
+
+        function toggleDarkMode() { 
+            document.documentElement.classList.toggle('dark');
+            setTimeout(() => update(), 100); // Re-renderiza gráfico para cores do modo escuro
+        }
+
+        document.getElementById('incomeInput').addEventListener('input', (e) => {
+            income = e.target.value;
+            localStorage.setItem('finpro_income', income);
+            update();
+        });
+
+        function addExpense() {
+            const desc = document.getElementById('desc').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const date = document.getElementById('date').value;
+            const category = document.getElementById('category').value;
+            const color = document.getElementById('expenseColor').value;
+
+            if(!desc || !amount) return alert("Preencha os dados!");
+
+            const expense = { id: Date.now(), desc, amount, date, category, color };
+            expenses.unshift(expense);
+            localStorage.setItem('finpro_expenses', JSON.stringify(expenses));
+            
+            document.getElementById('desc').value = "";
+            document.getElementById('amount').value = "";
+            update();
+        }
+
+        function deleteItem(id) {
+            expenses = expenses.filter(e => e.id !== id);
+            localStorage.setItem('finpro_expenses', JSON.stringify(expenses));
+            update();
+        }
+
+        function clearAll() {
+            if(confirm("Deseja apagar todos os registros?")) {
+                expenses = [];
+                localStorage.clear();
+                update();
+            }
+        }
+
+        function update() {
+            const total = expenses.reduce((acc, curr) => acc + curr.amount, 0);
+            const balanceValue = income - total;
+            const perc = Math.min((total / income) * 100, 100);
+
+            document.getElementById('balance').innerText = balanceValue.toLocaleString('pt-BR');
+            document.getElementById('savings').innerText = balanceValue > 0 ? balanceValue.toLocaleString('pt-BR') : "0,00";
+            document.getElementById('pBar').style.width = perc + "%";
+            document.getElementById('pText').innerText = Math.round(perc) + "%";
+
+            renderList();
+            renderChart();
+        }
+
+        function renderList() {
+            const container = document.getElementById('list');
+            if(expenses.length === 0) {
+                container.innerHTML = `<div class="py-20 text-center text-slate-400">Nenhum gasto registrado.</div>`;
+                return;
+            }
+
+            container.innerHTML = expenses.map(e => `
+                <div class="expense-enter flex items-center justify-between p-5 bg-slate-50 dark:bg-slate-900/50 rounded-[2rem] border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all group">
+                    <div class="flex items-center gap-4">
+                        <div class="w-2 h-10 rounded-full" style="background: ${e.color}"></div>
+                        <div>
+                            <h4 class="font-bold text-sm">${e.desc}</h4>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">${e.category} • ${e.date.split('-').reverse().join('/')}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="font-black text-slate-700 dark:text-slate-200 text-sm">R$ ${e.amount.toFixed(2)}</span>
+                        <button onclick="deleteItem(${e.id})" class="text-slate-300 hover:text-rose-500 transition-all opacity-0 group-hover:opacity-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            const data = expenses.map(e => e.amount);
+            const colors = expenses.map(e => e.color);
+            const labels = expenses.map(e => e.desc);
+
+            if(chart) chart.destroy();
+
+            chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        hoverOffset: 30,
+                        borderWidth: 0,
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    cutout: '85%',
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 15,
+                            titleFont: { size: 14, weight: 'bold' },
+                            cornerRadius: 12
+                        }
+                    }
+                }
+            });
+        }
+
+        // Registro do Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker registrado!'))
+                .catch(err => console.log('Erro ao registrar SW:', err));
+            });
+        }
+
+        update();
+    </script>
+</body>
+</html>
